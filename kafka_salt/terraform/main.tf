@@ -119,7 +119,7 @@ resource "aws_instance" "salt_master" {
       "sudo cp -r /tmp/salt/* /srv/salt/",
       "sudo chmod -R 777 /srv/salt",
       "sudo cp -r /tmp/salt/* /srv/salt/",
-      "sudo yum -y install java"
+      # "sudo yum -y install java"
     ]
     connection {
       type        = "ssh"
@@ -171,7 +171,7 @@ resource "aws_instance" "salt_minion" {
       "sudo mkdir -p /srv/salt/",
       "sudo cp -r /tmp/salt/* /srv/salt/",
       "sudo chmod -R 777 /srv/salt",
-      "sudo yum -y install java"
+      # "sudo yum -y install java"
     ]
     connection {
       type        = "ssh"
