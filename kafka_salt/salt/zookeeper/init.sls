@@ -1,9 +1,8 @@
 include:
-  - zookeeper.create_zookeeper_user
-  - zookeeper.download_zookeeper
-  - zookeeper.install_zookeeper
-  - zookeeper.create_zookeeper_dirs
-  - zookeeper.configure_zookeeper
-  - zookeeper.zk_cluster
-  - zookeeper.start_zookeeper
-  - zookeeper.zookeeper_service
+  - zookeeper.install_java
+  - zookeeper.create_directories
+  - zookeeper.download_and_extract_zookeeper
+  - zookeeper.rename_conf_file
+  - zookeeper.manage_zoo_cfg
+  - zookeeper.setup_zookeeper_data_dir
+  - zookeeper.start_zookeeper_server
