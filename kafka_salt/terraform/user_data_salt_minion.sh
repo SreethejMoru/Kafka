@@ -44,6 +44,14 @@ cat <<EOF | sudo tee /etc/salt/minion.d/id.conf
 # Declare the minion ID
 id: rebel_1
 EOF
+cat <<EOF | sudo tee -a /etc/salt/minion
+# Configure mine_functions
+mine_functions:
+  network.ip_addrs: []
+EOF
+# Restart Salt minion to apply changes
+sudo systemctl restart salt-minion  # Adjust for your init system if not using systemd
+
 echo "===> Uncomment the line containing"
 FILE_PATH="/etc/salt/minion"
 # Uncomment the line containing 'master: salt' and change the value

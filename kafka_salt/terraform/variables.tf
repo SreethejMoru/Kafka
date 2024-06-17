@@ -22,7 +22,7 @@ variable "key_name" {
 variable "minion_count" {
   description = "The number of Salt minions to create"
   type        = number
-    default = 1  # Adjust as needed
+    default = 3  # Adjust as needed
 
 }
 
