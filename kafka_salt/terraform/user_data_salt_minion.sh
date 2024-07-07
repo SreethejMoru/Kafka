@@ -1,14 +1,17 @@
 #!/bin/bash
-sudo yum update -y
-sudo yum install -y curl
-sudo rpm --import https://repo.saltproject.io/salt/py3/amazon/2/x86_64/SALT-PROJECT-GPG-PUBKEY-2023.pub
-curl -fsSL https://repo.saltproject.io/salt/py3/amazon/2/x86_64/latest.repo | sudo tee /etc/yum.repos.d/salt-amzn.repo
-echo "===> executing yum clean expire-cache"
-sudo yum clean expire-cache
-echo "===> executing install salt-minion"
-sudo yum -y install salt-minion
-echo "===> executing override"
-sudo yum install -y aws-cli salt-minion
+
+# Update package repositories and install prerequisites
+sudo apt update -y
+sudo apt install -y curl gnupg awscli
+
+# Import Salt GPG key and add SaltStack repository
+curl -fsSL https://repo.saltproject.io/py3/debian/10/amd64/latest/SALTSTACK-GPG-KEY.pub | sudo gpg --dearmor -o /usr/share/keyrings/salt-archive-keyring.gpg
+echo "deb [signed-by=/usr/share/keyrings/salt-archive-keyring.gpg] https://repo.saltproject.io/py3/debian/10/amd64/latest buster main" | sudo tee /etc/apt/sources.list.d/saltstack.list
+sudo apt update -y
+
+# Install Salt Minion
+sudo apt install -y salt-minion
+
 # Configure AWS CLI with hard-coded credentials
 AWS_ACCESS_KEY_ID=""
 AWS_SECRET_ACCESS_KEY=""
@@ -25,48 +28,76 @@ cat <<EOF > ~/.aws/config
 [default]
 region = $AWS_DEFAULT_REGION
 EOF
-echo "=====> adding master ip in /etc/salt/minion.d/master.conf"
-# Fetch the Salt master instance ID dynamically
-MASTER_INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=Salt_Master" --query "Reservations[*].Instances[*].InstanceId" --output text)
-echo "Master Instance ID: $MASTER_INSTANCE_ID"
 
-# Fetch the private IP address of the Salt master instance
-MASTER_PRIVATE_IP=$(aws ec2 describe-instances --instance-ids $MASTER_INSTANCE_ID --query "Reservations[*].Instances[*].PrivateIpAddress" --output text)
+# Fetch the Salt master private IP dynamically (adjust the AWS CLI command as per your setup)
+MASTER_PRIVATE_IP=$(aws ec2 describe-instances --filters "Name=tag:Name,Values=Kafka_salt_master" --query "Reservations[*].Instances[*].PrivateIpAddress" --output text)
 echo "Master Private IP: $MASTER_PRIVATE_IP"
 
 # Write the master IP address to the minion configuration file
-cat <<EOF | sudo tee /etc/salt/minion.d/master.conf > /dev/null
+sudo tee /etc/salt/minion.d/master.conf <<EOF
 # Override the default Salt master setting
 master: $MASTER_PRIVATE_IP
 EOF
-echo "===> executing ddclaration"
-cat <<EOF | sudo tee /etc/salt/minion.d/id.conf
-# Declare the minion ID
-id: rebel_1
-EOF
-cat <<EOF | sudo tee -a /etc/salt/minion
-# Configure mine_functions
-mine_functions:
-  network.ip_addrs: []
-EOF
-# Restart Salt minion to apply changes
-sudo systemctl restart salt-minion  # Adjust for your init system if not using systemd
 
-echo "===> Uncomment the line containing"
-FILE_PATH="/etc/salt/minion"
-# Uncomment the line containing 'master: salt' and change the value
-sed -i 's/^#\(.*master: salt.*\)/\1/' "$FILE_PATH"
-sed -i "s/master: salt/master: $MASTER_PRIVATE_IP/" "$FILE_PATH"
-echo "===> adding line to host"
+# Declare the minion ID
+sudo tee /etc/salt/minion.d/id.conf <<EOF
+id: key_1
+EOF
+
+# Configure mine_functions
+sudo tee -a /etc/salt/minion <<EOF
+mine_functions:
+  ipv4:
+    - mine_function: network.ip_addrs
+    - type: ipv4
+log_level: debug
+log_level_logfile: debug
+EOF
+
+# Restart Salt minion to apply changes (adjust for your init system if not using systemd)
+sudo systemctl restart salt-minion
+
+# Uncomment and update the master configuration in /etc/salt/minion
+sudo sed -i 's/^#\(.*master: salt.*\)/\1/' /etc/salt/minion
+sudo sed -i "s/master: salt/master: $MASTER_PRIVATE_IP/" /etc/salt/minion
+
 # Add a new line to the /etc/hosts file
-echo "$MASTER_PRIVATE_IP salt" >> /etc/hosts
+echo "$MASTER_PRIVATE_IP salt" | sudo tee -a /etc/hosts
+
+# Install iptables and configure rules
 echo "=====> installing iptables"
-sudo yum install -y iptables
+# sudo apt install -y iptables
+sudo apt update
+sudo apt install -y iptables
 sudo iptables -A INPUT -p tcp --dport 4505 -j ACCEPT
 sudo iptables -A INPUT -p tcp --dport 4506 -j ACCEPT
-sudo iptables-save | sudo tee /etc/sysconfig/iptables
-sudo service iptables restart
-echo "=====> starting salt-minion"
-sudo systemctl enable salt-minion 
-sudo systemctl start salt-minion
 
+# ZooKeeper Client Port (2181)
+sudo iptables -A INPUT -p tcp --dport 2181 -j ACCEPT
+sudo iptables -A OUTPUT -p tcp --dport 2181 -j ACCEPT
+
+# ZooKeeper Leader Election Port (3888)
+sudo iptables -A INPUT -p tcp --dport 3888 -j ACCEPT
+sudo iptables -A OUTPUT -p tcp --dport 3888 -j ACCEPT
+
+# ZooKeeper Peer Communication Port (2888)
+sudo iptables -A INPUT -p tcp --dport 2888 -j ACCEPT
+sudo iptables -A OUTPUT -p tcp --dport 2888 -j ACCEPT
+
+# Kafka Broker Port (9092)
+sudo iptables -A INPUT -p tcp --dport 9092 -j ACCEPT
+sudo iptables -A OUTPUT -p tcp --dport 9092 -j ACCEPT
+
+sudo apt update
+# Preconfigure iptables-persistent
+echo iptables-persistent iptables-persistent/autosave_v4 boolean true | sudo debconf-set-selections
+echo iptables-persistent iptables-persistent/autosave_v6 boolean true | sudo debconf-set-selections
+sudo apt install -y iptables-persistent #asking 2 times yes
+sudo netfilter-persistent save
+sudo iptables-save | sudo tee /etc/iptables/rules.v4
+# sudo systemctl restart iptables
+sudo systemctl enable netfilter-persistent
+sudo systemctl start netfilter-persistent
+# Enable and start Salt Minion service
+sudo systemctl enable salt-minion
+sudo systemctl start salt-minion

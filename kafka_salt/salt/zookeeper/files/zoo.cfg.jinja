@@ -1,6 +1,6 @@
 tickTime=2000
 
-dataDir=/tmp/zookeeper
+dataDir=/var/lib/zookeeper
 
 clientPort=2181
 
@@ -12,11 +12,6 @@ syncLimit=5
 
 4lw.commands.whitelist=*
 
-{% set node_ips = salt['mine.get']('*', 'network.ip_addrs', 'grain') %}
-{% set node1_ip = grains['ipv4'][0] if grains['id'] == 'rebel_1' else node_ips['rebel_1'][0] %}
-{% set node2_ip = grains['ipv4'][0] if grains['id'] == 'rebel_1' else node_ips['rebel_1'][0] %}
-{% set node3_ip = grains['ipv4'][0] if grains['id'] == 'rebel_1' else node_ips['rebel_1'][0] %}
-
-server.1={{ node1_ip }}:2888:3888
-server.2={{ node2_ip }}:2888:3888
-server.3={{ node3_ip }}:2888:3888
+server.1={{ cassandra_ips1 }}:2888:3888
+server.2={{ cassandra_ips2 }}:2888:3888
+server.3={{ cassandra_ips3 }}:2888:3888

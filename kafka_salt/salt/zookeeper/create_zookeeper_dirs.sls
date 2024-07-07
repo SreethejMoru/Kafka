@@ -1,26 +1,14 @@
-create_zookeeper_data_dir:
+# create_zookeeper_dirs.sls
+
+/var/lib/zookeeper/version-2:
   file.directory:
-    - name: /opt/zookeeper-3.8.4/data
-    - user: zookeeper
-    - group: zookeeper
+    - user: admin
+    - group: admin
     - mode: 755
     - makedirs: True
 
-
-create_zookeeper_log_dir:
+/home/admin/kafka_node/kafka_2.13-3.7.0/logs:
   file.directory:
-    - name: /opt/zookeeper-3.8.4/logs
-    - user: zookeeper
-    - group: zookeeper
-    - mode: 777
-    - makedirs: True
-
-      
-
-create_zookeeper_conf_dir:
-  file.directory:
-    - name: /opt/zookeeper-3.8.4/conf
-    - user: zookeeper
-    - group: zookeeper
+    - user: admin
+    - group: admin
     - mode: 755
-    - makedirs: True

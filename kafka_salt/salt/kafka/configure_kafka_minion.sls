@@ -1,13 +1,13 @@
-# kafka.configure_kafka_minion.sls
-
-configure_kafka_rebel_1:
+configure_kafka_node:
   file.managed:
-    - name: /home/ec2-user/kafka_node/kafka_2.13-3.7.0/config/server.properties
-    - contents: |
-        broker.id=1
-        listeners=PLAINTEXT://:9092
-        log.dirs=/tmp/kafka-logs
-        zookeeper.connect=zk_1_ip:2181,zk_2_ip:2181,zk_3_ip:2181
-    - require:
-      - cmd: extract_kafka  # Ensure 'extract_kafka' command completes first
-    - onlyif: test "$(hostname)" = "rebel_1"  # Apply only on rebel_1 minion
+    - name: /home/admin/kafka_node/kafka_2.13-3.7.0/config/server.properties
+    - source: salt://kafka/server.properties.jinja
+    - template: jinja
+    - context:
+        broker_id: {{ grains.get('id', '0') | replace('key_', '') | int }}
+        kafka_node_ip1: "{% for ip in salt['mine.get']('key_1', 'ipv4').values() %}{{ ip|replace('[','')|replace(']','')|replace("'", '') }}{% if not loop.last %},{% endif %}{% endfor %}"
+        kafka_node_ip2: "{% for ip in salt['mine.get']('key_2', 'ipv4').values() %}{{ ip|replace('[','')|replace(']','')|replace("'", '') }}{% if not loop.last %},{% endif %}{% endfor %}"
+        kafka_node_ip3: "{% for ip in salt['mine.get']('key_3', 'ipv4').values() %}{{ ip|replace('[','')|replace(']','')|replace("'", '') }}{% if not loop.last %},{% endif %}{% endfor %}"
+    - user: admin
+    - group: admin
+    - mode: 755
