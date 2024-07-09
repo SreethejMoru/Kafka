@@ -4,5 +4,4 @@ include:
   - zookeeper.rename_conf_file
   - zookeeper.manage_zoo_cfg
   - zookeeper.zookeeper_myid
-  - zookeeper.kafka_logs_permissions
   - zookeeper.start_zookeeper_server

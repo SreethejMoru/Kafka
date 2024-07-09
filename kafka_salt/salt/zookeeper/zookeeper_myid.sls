@@ -6,7 +6,7 @@
 
 create_zookeeper_dir_{{ node }}:
   file.directory:
-    - name: /var/lib/zookeeper/{{ node }}
+    - name: /var/lib/zookeeper
     - makedirs: True
     - user: root
     - group: root
@@ -14,7 +14,7 @@ create_zookeeper_dir_{{ node }}:
 
 create_myid_file_{{ node }}:
   file.managed:
-    - name: /var/lib/zookeeper/{{ node }}/myid
+    - name: /var/lib/zookeeper/myid
     - contents: 'myid={{ zk_id }}'
     - user: root
     - group: root
