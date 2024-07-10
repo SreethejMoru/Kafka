@@ -1,3 +1,0 @@
-base:
-  '*':
-    - zookeeper.init
